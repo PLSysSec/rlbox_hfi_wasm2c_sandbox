@@ -306,10 +306,29 @@ __attribute__((weak))
 #endif
       func = reinterpret_cast<T_Func>(thread_data.sandbox->callbacks[N]);
     }
+
+    // Exit HFI sandbox
+    wasm_rt_hfi_disable();
+
+    using T_NoVoidRet = std::conditional_t<std::is_void_v<T_Ret>, uint32_t, T_Ret>;
+    T_NoVoidRet ret;
+
     // Callbacks are invoked through function pointers, cannot use std::forward
     // as we don't have caller context for T_Args, which means they are all
     // effectively passed by value
-    return func(thread_data.sandbox->serialize_to_sandbox<T_Args>(params)...);
+    if constexpr (std::is_void_v<T_Ret>) {
+      RLBOX_WASM2C_UNUSED(ret);
+      func(thread_data.sandbox->serialize_to_sandbox<T_Args>(params)...);
+    } else {
+      ret = func(thread_data.sandbox->serialize_to_sandbox<T_Args>(params)...);
+    }
+
+    // Enter HFI sandbox
+    wasm_rt_hfi_enable(sandbox_memory_info);
+
+    if constexpr (!std::is_void_v<T_Ret>) {
+      return ret;
+    }
   }
 
   template<uint32_t N, typename T_Ret, typename... T_Args>
@@ -330,12 +349,20 @@ __attribute__((weak))
 #endif
       func = reinterpret_cast<T_Func>(thread_data.sandbox->callbacks[N]);
     }
+
+    // Exit HFI sandbox
+    wasm_rt_hfi_disable();
+
     // Callbacks are invoked through function pointers, cannot use std::forward
     // as we don't have caller context for T_Args, which means they are all
     // effectively passed by value
     auto ret_val =
       func(thread_data.sandbox->serialize_to_sandbox<T_Args>(params)...);
     // Copy the return value back
+
+    // Enter HFI sandbox
+    wasm_rt_hfi_enable(sandbox_memory_info);
+
     auto ret_ptr = reinterpret_cast<T_Ret*>(
       thread_data.sandbox->template impl_get_unsandboxed_pointer<T_Ret*>(ret));
     *ret_ptr = ret_val;
@@ -829,12 +856,18 @@ protected:
       std::conditional_t<std::is_void_v<T_Ret>, uint32_t, T_Ret>;
     T_NoVoidRet ret;
 
+    // Enter HFI sandbox
+    wasm_rt_hfi_enable(sandbox_memory_info);
+
     if constexpr (std::is_void_v<T_Ret>) {
       RLBOX_WASM2C_UNUSED(ret);
       func_ptr_conv(exec_env, serialize_class_arg(params)...);
     } else {
       ret = func_ptr_conv(exec_env, serialize_class_arg(params)...);
     }
+
+    // Exit HFI sandbox
+    wasm_rt_hfi_disable();
 
     for (size_t i = 0; i < alloc_length; i++) {
       impl_free_in_sandbox(allocations_buff[i]);

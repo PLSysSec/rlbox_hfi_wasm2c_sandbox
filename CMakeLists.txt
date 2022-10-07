@@ -213,9 +213,12 @@ list(FILTER WASM2C_RUNTIME_CODE EXCLUDE REGEX "${WASM2C_RUNTIME_SOURCE_DIR}/exam
 
 add_library(glue_lib_static STATIC ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_static PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c)
+target_compile_definitions(glue_lib_static PUBLIC WASM2C_HFI_ENABLED)
+WASM2C_HFI_ENABLED
 
 add_library(glue_lib_so SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c)
+target_compile_definitions(glue_lib_static PUBLIC WASM2C_HFI_ENABLED)
 # Add a dependency to glue_lib_static so we don't invoke the generator for GLUE_LIB_C multiple times
 add_dependencies(glue_lib_so glue_lib_static)
 # default firefox flags
@@ -224,6 +227,7 @@ add_dependencies(glue_lib_so glue_lib_static)
 add_library(glue_lib_so_shadow_asan SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_so_shadow_asan PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c)
 target_compile_definitions(glue_lib_so_shadow_asan PRIVATE WASM_CHECK_SHADOW_MEMORY)
+target_compile_definitions(glue_lib_static PUBLIC WASM2C_HFI_ENABLED)
 # Needed else both binaries invoke the custom command to generate ${GLUE_LIB_C}
 add_dependencies(glue_lib_so_shadow_asan glue_lib_so)
 
@@ -242,6 +246,7 @@ target_include_directories(test_rlbox_glue PUBLIC ${CMAKE_SOURCE_DIR}/include
                                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                            PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                            PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                            )
 target_link_libraries(test_rlbox_glue Catch2::Catch2
                                       ${CMAKE_THREAD_LIBS_INIT}
@@ -266,6 +271,7 @@ target_include_directories(test_rlbox_glue_static PUBLIC ${CMAKE_SOURCE_DIR}/inc
                                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                            PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                            PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                            PUBLIC ${GLUE_LIB_WASM_DIR}
                                            )
 target_link_libraries(test_rlbox_glue_static Catch2::Catch2
@@ -291,6 +297,7 @@ target_include_directories(test_rlbox_glue_smallheap PUBLIC ${CMAKE_SOURCE_DIR}/
                                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                            PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                            PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                            PUBLIC ${GLUE_LIB_WASM_DIR}
                                            )
 target_link_libraries(test_rlbox_glue_smallheap Catch2::Catch2
@@ -316,6 +323,7 @@ target_include_directories(test_rlbox_glue_embed PUBLIC ${CMAKE_SOURCE_DIR}/incl
                                                  PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                                  PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                                  PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                 PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                                  )
 target_link_libraries(test_rlbox_glue_embed Catch2::Catch2
                                       ${CMAKE_THREAD_LIBS_INIT}
@@ -340,6 +348,7 @@ target_include_directories(test_rlbox_glue_shadow_asan PUBLIC ${CMAKE_SOURCE_DIR
                                                        PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                                        PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                                        PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                       PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                           )
 target_link_libraries(test_rlbox_glue_shadow_asan Catch2::Catch2
                                                   ${CMAKE_THREAD_LIBS_INIT}
