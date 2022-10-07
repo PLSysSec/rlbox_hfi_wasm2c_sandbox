@@ -208,17 +208,23 @@ file(GLOB_RECURSE
      ${WASM2C_RUNTIME_SOURCE_DIR}/*.c)
 
 set(WASM2C_RUNTIME_CODE ${WASM2C_RUNTIME_CODE_C} ${WASM2C_RUNTIME_SOURCE_DIR}/wasm-rt-shadow.cpp)
+list(FILTER WASM2C_RUNTIME_CODE EXCLUDE REGEX "${WASM2C_RUNTIME_SOURCE_DIR}/wasm-rt-wasi.c" )
 list(FILTER WASM2C_RUNTIME_CODE EXCLUDE REGEX "${WASM2C_RUNTIME_SOURCE_DIR}/examples/.*" )
 
 add_library(glue_lib_static STATIC ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_static PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                            PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
 )
+# -luv uvwasi_a
+target_link_libraries(glue_lib_static ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
 
 add_library(glue_lib_so SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                       PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                        PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
 )
+target_link_libraries(glue_lib_so ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
 
 # Add a dependency to glue_lib_static so we don't invoke the generator for GLUE_LIB_C multiple times
 add_dependencies(glue_lib_so glue_lib_static)
@@ -227,8 +233,10 @@ add_dependencies(glue_lib_so glue_lib_static)
 
 add_library(glue_lib_so_shadow_asan SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_so_shadow_asan PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                   PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                                    PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
 )
+target_link_libraries(glue_lib_so_shadow_asan ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
 target_compile_definitions(glue_lib_so_shadow_asan PRIVATE WASM_CHECK_SHADOW_MEMORY)
 # Needed else both binaries invoke the custom command to generate ${GLUE_LIB_C}
 add_dependencies(glue_lib_so_shadow_asan glue_lib_so)
@@ -248,6 +256,7 @@ target_include_directories(test_rlbox_glue PUBLIC ${CMAKE_SOURCE_DIR}/include
                                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                            PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                            PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                            PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                            )
 target_link_libraries(test_rlbox_glue Catch2::Catch2
@@ -273,6 +282,7 @@ target_include_directories(test_rlbox_glue_static PUBLIC ${CMAKE_SOURCE_DIR}/inc
                                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                            PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                            PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                            PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                            PUBLIC ${GLUE_LIB_WASM_DIR}
                                            )
@@ -299,6 +309,7 @@ target_include_directories(test_rlbox_glue_smallheap PUBLIC ${CMAKE_SOURCE_DIR}/
                                            PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                            PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                            PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                            PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                            PUBLIC ${GLUE_LIB_WASM_DIR}
                                            )
@@ -325,6 +336,7 @@ target_include_directories(test_rlbox_glue_embed PUBLIC ${CMAKE_SOURCE_DIR}/incl
                                                  PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                                  PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                                  PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                 PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                                  PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                                                  )
 target_link_libraries(test_rlbox_glue_embed Catch2::Catch2
@@ -350,6 +362,7 @@ target_include_directories(test_rlbox_glue_shadow_asan PUBLIC ${CMAKE_SOURCE_DIR
                                                        PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
                                                        PUBLIC ${rlbox_SOURCE_DIR}/wasm
                                                        PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                       PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
                                                        PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
                           )
 target_link_libraries(test_rlbox_glue_shadow_asan Catch2::Catch2
