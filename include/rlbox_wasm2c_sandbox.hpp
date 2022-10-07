@@ -2,6 +2,10 @@
 
 #include "wasm-rt.h"
 
+#ifndef WASM2C_HFI_ENABLED
+#error "HFI support flag missing"
+#endif
+
 // Pull the helper header from the main repo for dynamic_check and scope_exit
 #include "rlbox_helpers.hpp"
 
@@ -324,7 +328,7 @@ __attribute__((weak))
     }
 
     // Enter HFI sandbox
-    wasm_rt_hfi_enable(sandbox_memory_info);
+    wasm_rt_hfi_enable(thread_data.sandbox->sandbox_memory_info);
 
     if constexpr (!std::is_void_v<T_Ret>) {
       return ret;
@@ -361,7 +365,7 @@ __attribute__((weak))
     // Copy the return value back
 
     // Enter HFI sandbox
-    wasm_rt_hfi_enable(sandbox_memory_info);
+    wasm_rt_hfi_enable(thread_data.sandbox->sandbox_memory_info);
 
     auto ret_ptr = reinterpret_cast<T_Ret*>(
       thread_data.sandbox->template impl_get_unsandboxed_pointer<T_Ret*>(ret));

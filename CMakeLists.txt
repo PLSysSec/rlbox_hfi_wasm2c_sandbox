@@ -119,17 +119,16 @@ if(NOT wasiclang_POPULATED)
   FetchContent_Populate(wasiclang)
 endif()
 
-FetchContent_Declare(
-  mod_wasm2c
-  GIT_REPOSITORY https://github.com/PLSysSec/wasm2c_sandbox_compiler
-  GIT_TAG main)
-FetchContent_GetProperties(mod_wasm2c)
-if(NOT mod_wasm2c_POPULATED)
-  FetchContent_Populate(mod_wasm2c)
-endif()
+# FetchContent_Declare(
+#   mod_wasm2c
+#   GIT_REPOSITORY https://github.com/PLSysSec/wasm2c_sandbox_compiler
+#   GIT_TAG main)
+# FetchContent_GetProperties(mod_wasm2c)
+# if(NOT mod_wasm2c_POPULATED)
+#   FetchContent_Populate(mod_wasm2c)
+# endif()
 
-# set (mod_wasm2c_SOURCE_DIR "/home/shr/Code/LibrarySandboxing/wasm2c_sandbox_compiler/")
-# set (mod_wasm2c_SOURCE_DIR "C:/Users/shr/Code/wasm2c_sandbox_compiler/")
+set (mod_wasm2c_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../hfi_wasm2c_sandbox_compiler/")
 
 if(DEV)
   if(MSVC)
@@ -212,22 +211,25 @@ set(WASM2C_RUNTIME_CODE ${WASM2C_RUNTIME_CODE_C} ${WASM2C_RUNTIME_SOURCE_DIR}/wa
 list(FILTER WASM2C_RUNTIME_CODE EXCLUDE REGEX "${WASM2C_RUNTIME_SOURCE_DIR}/examples/.*" )
 
 add_library(glue_lib_static STATIC ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
-target_include_directories(glue_lib_static PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c)
-target_compile_definitions(glue_lib_static PUBLIC WASM2C_HFI_ENABLED)
-WASM2C_HFI_ENABLED
+target_include_directories(glue_lib_static PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
+)
 
 add_library(glue_lib_so SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
-target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c)
-target_compile_definitions(glue_lib_static PUBLIC WASM2C_HFI_ENABLED)
+target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                       PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
+)
+
 # Add a dependency to glue_lib_static so we don't invoke the generator for GLUE_LIB_C multiple times
 add_dependencies(glue_lib_so glue_lib_static)
 # default firefox flags
 # target_compile_options(glue_lib_so PRIVATE -Werror -Wall -Wempty-body -Wignored-qualifiers -Wpointer-arith -Wsign-compare -Wtype-limits -Wunreachable-code -Wduplicated-cond -Wno-error=maybe-uninitialized -Wno-error=deprecated-declarations -Wno-error=array-bounds -Wno-error=coverage-mismatch -Wno-error=free-nonheap-object -Wno-multistatement-macros -Wno-error=class-memaccess -Wno-error=deprecated-copy -Wno-error=unused-but-set-variable -Wformat -Wformat-overflow=2 -Wno-psabi -Wno-error=unused-function)
 
 add_library(glue_lib_so_shadow_asan SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
-target_include_directories(glue_lib_so_shadow_asan PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c)
+target_include_directories(glue_lib_so_shadow_asan PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                   PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
+)
 target_compile_definitions(glue_lib_so_shadow_asan PRIVATE WASM_CHECK_SHADOW_MEMORY)
-target_compile_definitions(glue_lib_static PUBLIC WASM2C_HFI_ENABLED)
 # Needed else both binaries invoke the custom command to generate ${GLUE_LIB_C}
 add_dependencies(glue_lib_so_shadow_asan glue_lib_so)
 
