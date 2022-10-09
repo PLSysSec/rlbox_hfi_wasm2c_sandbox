@@ -160,7 +160,7 @@ endif()
 # wasm2c ###################
 
 set(WASM2C_RUNTIME_SOURCE_DIR "${mod_wasm2c_SOURCE_DIR}/wasm2c/")
-set(WASM2C_RUNTIME_DIR "${mod_wasm2c_SOURCE_DIR}/build-hfi/")
+set(WASM2C_RUNTIME_DIR "${mod_wasm2c_SOURCE_DIR}/build_release_hfi/")
 set(WASM2C_COMPILER_DIR "${WASM2C_RUNTIME_DIR}")
 
 set(C_SOURCE_FILES "${CMAKE_SOURCE_DIR}/c_src/wasm2c_sandbox_wrapper.c")
@@ -174,13 +174,11 @@ add_custom_command(OUTPUT "${GLUE_LIB_H}" "${GLUE_LIB_C}" "${GLUE_LIB_WASM}"
                    WORKING_DIRECTORY "${mod_wasm2c_SOURCE_DIR}"
                    COMMAND ${CMAKE_COMMAND}
                            -DCMAKE_BUILD_TYPE=${WASM2C_BUILD_TYPE}
-                           -DCMAKE_C_FLAGS="-DWASM2C_HFI_ENABLED"
-                           -DCMAKE_CXX_FLAGS="-DWASM2C_HFI_ENABLED"
-                           -DLINK_FLAGS=""
                            -S  .
-                           -B ./build-hfi
+                           -B ./build_release_hfi
+                           -DWasmSafetyEnforcement=WASM_USE_HFI
                    COMMAND ${CMAKE_COMMAND}
-                           --build ./build-hfi
+                           --build ./build_release_hfi
                            --config ${WASM2C_BUILD_TYPE}
                            --parallel
                     COMMAND ${CMAKE_COMMAND} -E make_directory ${GLUE_LIB_WASM_DIR}
@@ -217,7 +215,7 @@ target_include_directories(glue_lib_static PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm
                                            PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
 )
 target_link_libraries(glue_lib_static ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
-target_compile_definitions(glue_lib_static PUBLIC WASM2C_HFI_ENABLED)
+target_compile_definitions(glue_lib_static PUBLIC WASM_USE_HFI)
 
 add_library(glue_lib_so SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
@@ -225,7 +223,7 @@ target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
                                        PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
 )
 target_link_libraries(glue_lib_so ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
-target_compile_definitions(glue_lib_so PUBLIC WASM2C_HFI_ENABLED)
+target_compile_definitions(glue_lib_so PUBLIC WASM_USE_HFI)
 
 # Add a dependency to glue_lib_static so we don't invoke the generator for GLUE_LIB_C multiple times
 add_dependencies(glue_lib_so glue_lib_static)
@@ -241,7 +239,7 @@ target_link_libraries(glue_lib_so_shadow_asan ${WASM2C_RUNTIME_DIR}/third_party/
 target_compile_definitions(glue_lib_so_shadow_asan PRIVATE WASM_CHECK_SHADOW_MEMORY)
 # Needed else both binaries invoke the custom command to generate ${GLUE_LIB_C}
 add_dependencies(glue_lib_so_shadow_asan glue_lib_so)
-target_compile_definitions(glue_lib_so_shadow_asan PUBLIC WASM2C_HFI_ENABLED)
+target_compile_definitions(glue_lib_so_shadow_asan PUBLIC WASM_USE_HFI)
 
 include(CTest)
 include(Catch)
@@ -267,7 +265,7 @@ target_link_libraries(test_rlbox_glue Catch2::Catch2
 )
 
 target_compile_definitions(test_rlbox_glue PUBLIC GLUE_LIB_WASM2C_PATH="$<TARGET_FILE:glue_lib_so>"
-                                           PUBLIC WASM2C_HFI_ENABLED)
+                                           PUBLIC WASM_USE_HFI)
 
 add_dependencies(test_rlbox_glue glue_lib_so)
 
@@ -296,7 +294,7 @@ target_link_libraries(test_rlbox_glue_static Catch2::Catch2
                                       glue_lib_static
 )
 
-target_compile_definitions(test_rlbox_glue_static PUBLIC WASM2C_HFI_ENABLED)
+target_compile_definitions(test_rlbox_glue_static PUBLIC WASM_USE_HFI)
 
 add_dependencies(test_rlbox_glue_static glue_lib_so)
 
@@ -325,7 +323,7 @@ target_link_libraries(test_rlbox_glue_smallheap Catch2::Catch2
                                       glue_lib_static
 )
 
-target_compile_definitions(test_rlbox_glue_smallheap PUBLIC WASM2C_HFI_ENABLED)
+target_compile_definitions(test_rlbox_glue_smallheap PUBLIC WASM_USE_HFI)
 
 add_dependencies(test_rlbox_glue_smallheap glue_lib_so)
 
@@ -353,7 +351,7 @@ target_link_libraries(test_rlbox_glue_embed Catch2::Catch2
 )
 
 target_compile_definitions(test_rlbox_glue_embed PUBLIC GLUE_LIB_WASM2C_PATH="$<TARGET_FILE:glue_lib_so>"
-                                                 PUBLIC WASM2C_HFI_ENABLED)
+                                                 PUBLIC WASM_USE_HFI)
 
 add_dependencies(test_rlbox_glue_embed glue_lib_so)
 
@@ -381,7 +379,7 @@ target_link_libraries(test_rlbox_glue_shadow_asan Catch2::Catch2
 )
 
 target_compile_definitions(test_rlbox_glue_shadow_asan PUBLIC GLUE_LIB_WASM2C_PATH="$<TARGET_FILE:glue_lib_so_shadow_asan>"
-                                                       PUBLIC WASM2C_HFI_ENABLED)
+                                                       PUBLIC WASM_USE_HFI)
 
 add_dependencies(test_rlbox_glue_shadow_asan glue_lib_so_shadow_asan)
 

@@ -2,10 +2,6 @@
 
 #include "wasm-rt.h"
 
-#ifndef WASM2C_HFI_ENABLED
-#error "HFI support flag missing"
-#endif
-
 // Pull the helper header from the main repo for dynamic_check and scope_exit
 #include "rlbox_helpers.hpp"
 
