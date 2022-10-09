@@ -161,7 +161,7 @@ endif()
 
 set(WASM2C_RUNTIME_SOURCE_DIR "${mod_wasm2c_SOURCE_DIR}/wasm2c/")
 set(WASM2C_RUNTIME_DIR "${mod_wasm2c_SOURCE_DIR}/build-hfi/")
-set(WASM2C_COMPILER_DIR "${mod_wasm2c_SOURCE_DIR}/bin/")
+set(WASM2C_COMPILER_DIR "${WASM2C_RUNTIME_DIR}")
 
 set(C_SOURCE_FILES "${CMAKE_SOURCE_DIR}/c_src/wasm2c_sandbox_wrapper.c")
 set(GLUE_LIB_WASM_DIR "${CMAKE_BINARY_DIR}/wasm/")
