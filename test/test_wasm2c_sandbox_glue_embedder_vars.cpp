@@ -22,6 +22,9 @@ RLBOX_WASM2C_SANDBOX_STATIC_VARIABLES();
 #define CreateSandbox(sandbox) sandbox.create_sandbox(GLUE_LIB_WASM2C_PATH)
 #define CreateSandboxFallible(sandbox) sandbox.create_sandbox("does_not_exist", false /* infallible */)
 #endif
+
+#define BENCHMARK_CUSTOM_ITERATIONS 1000
+
 // NOLINTNEXTLINE
 #include "test_sandbox_glue.inc.cpp"
 #include "test_wasm2c_sandbox_wasmtests.cpp"

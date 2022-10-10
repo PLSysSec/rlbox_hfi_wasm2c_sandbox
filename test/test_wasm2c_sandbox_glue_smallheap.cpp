@@ -16,6 +16,9 @@
 #else
 #define CreateSandbox(sandbox) sandbox.create_sandbox(true /* abort on fail */, 8 * 1024 * 1024 /* max heap */)
 #endif
+
+#define BENCHMARK_CUSTOM_ITERATIONS 1000
+
 // NOLINTNEXTLINE
 #include "test_sandbox_glue.inc.cpp"
 
