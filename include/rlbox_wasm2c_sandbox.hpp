@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef WASM_USE_HFI
+#define WASM_USE_HFI
+#endif
+
 #include "wasm-rt.h"
 
 // Pull the helper header from the main repo for dynamic_check and scope_exit
@@ -307,8 +311,10 @@ __attribute__((weak))
       func = reinterpret_cast<T_Func>(thread_data.sandbox->callbacks[N]);
     }
 
+#ifdef WASM_USE_HFI
     // Exit HFI sandbox
     wasm_rt_hfi_disable();
+#endif
 
     using T_NoVoidRet = std::conditional_t<std::is_void_v<T_Ret>, uint32_t, T_Ret>;
     T_NoVoidRet ret;
@@ -323,8 +329,10 @@ __attribute__((weak))
       ret = func(thread_data.sandbox->serialize_to_sandbox<T_Args>(params)...);
     }
 
+#ifdef WASM_USE_HFI
     // Enter HFI sandbox
     wasm_rt_hfi_enable(thread_data.sandbox->sandbox_memory_info);
+#endif
 
     if constexpr (!std::is_void_v<T_Ret>) {
       return ret;
@@ -350,8 +358,10 @@ __attribute__((weak))
       func = reinterpret_cast<T_Func>(thread_data.sandbox->callbacks[N]);
     }
 
+#ifdef WASM_USE_HFI
     // Exit HFI sandbox
     wasm_rt_hfi_disable();
+#endif
 
     // Callbacks are invoked through function pointers, cannot use std::forward
     // as we don't have caller context for T_Args, which means they are all
@@ -360,8 +370,10 @@ __attribute__((weak))
       func(thread_data.sandbox->serialize_to_sandbox<T_Args>(params)...);
     // Copy the return value back
 
+#ifdef WASM_USE_HFI
     // Enter HFI sandbox
     wasm_rt_hfi_enable(thread_data.sandbox->sandbox_memory_info);
+#endif
 
     auto ret_ptr = reinterpret_cast<T_Ret*>(
       thread_data.sandbox->template impl_get_unsandboxed_pointer<T_Ret*>(ret));
@@ -856,8 +868,10 @@ protected:
       std::conditional_t<std::is_void_v<T_Ret>, uint32_t, T_Ret>;
     T_NoVoidRet ret;
 
+#ifdef WASM_USE_HFI
     // Enter HFI sandbox
     wasm_rt_hfi_enable(sandbox_memory_info);
+#endif
 
     if constexpr (std::is_void_v<T_Ret>) {
       RLBOX_WASM2C_UNUSED(ret);
@@ -866,8 +880,10 @@ protected:
       ret = func_ptr_conv(exec_env, serialize_class_arg(params)...);
     }
 
+#ifdef WASM_USE_HFI
     // Exit HFI sandbox
     wasm_rt_hfi_disable();
+#endif
 
     for (size_t i = 0; i < alloc_length; i++) {
       impl_free_in_sandbox(allocations_buff[i]);
