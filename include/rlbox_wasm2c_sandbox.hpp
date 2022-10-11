@@ -585,13 +585,6 @@ protected:
     sandbox_info = get_info_func();
 
     std::call_once(wasm2c_runtime_initialized, [&](){
-#     ifdef HFI_EMULATION
-#       ifndef RLBOX_USE_STATIC_CALLS
-          using void_void_t = void(*)(void);
-          void_void_t wasm_rt_hfi_emulate_reserve_lower4 = (void_void_t) symbol_lookup("wasm_rt_hfi_emulate_reserve_lower4");
-#       endif
-        wasm_rt_hfi_emulate_reserve_lower4();
-#     endif
       sandbox_info.wasm_rt_sys_init();
     });
 
