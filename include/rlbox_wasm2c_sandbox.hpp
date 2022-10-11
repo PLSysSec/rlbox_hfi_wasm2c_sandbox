@@ -803,6 +803,12 @@ protected:
   template<typename T, typename T_Converted, typename... T_Args>
   auto impl_invoke_with_func_ptr(T_Converted* func_ptr, T_Args&&... params)
   {
+    return impl_invoke_with_func_ptr_hfi<false, T, T_Converted, T_Args...>(func_ptr, std::forward<T_Args>(params)...);
+  }
+
+  template<bool THFIEntered, typename T, typename T_Converted, typename... T_Args>
+  auto impl_invoke_with_func_ptr_hfi(T_Converted* func_ptr, T_Args&&... params)
+  {
 #ifdef RLBOX_EMBEDDER_PROVIDES_TLS_STATIC_VARIABLES
     auto& thread_data = *get_rlbox_wasm2c_sandbox_thread_data();
 #endif
@@ -859,7 +865,7 @@ protected:
                                           decltype(arg)> {
       using T_Arg = decltype(arg);
       if constexpr (std::is_class_v<T_Arg>) {
-        auto slot = impl_malloc_in_sandbox(sizeof(T_Arg));
+        auto slot = impl_malloc_in_sandbox_hfi<true>(sizeof(T_Arg));
         auto ptr =
           reinterpret_cast<T_Arg*>(impl_get_unsandboxed_pointer<T_Arg*>(slot));
         *ptr = arg;
@@ -889,8 +895,10 @@ protected:
     T_NoVoidRet ret;
 
 #ifdef WASM_USE_HFI
-    // Enter HFI sandbox
-    wasm_rt_hfi_enable(sandbox_memory_info);
+    if constexpr(!THFIEntered) {
+      // Enter HFI sandbox
+      wasm_rt_hfi_enable(sandbox_memory_info);
+    }
 #endif
 
     if constexpr (std::is_void_v<T_Ret>) {
@@ -900,14 +908,16 @@ protected:
       ret = func_ptr_conv(exec_env, serialize_class_arg(params)...);
     }
 
-#ifdef WASM_USE_HFI
-    // Exit HFI sandbox
-    wasm_rt_hfi_disable();
-#endif
-
     for (size_t i = 0; i < alloc_length; i++) {
-      impl_free_in_sandbox(allocations_buff[i]);
+      impl_free_in_sandbox_hfi<true>(allocations_buff[i]);
     }
+
+#ifdef WASM_USE_HFI
+    if constexpr(!THFIEntered) {
+      // Exit HFI sandbox
+      wasm_rt_hfi_disable();
+    }
+#endif
 
     if constexpr (!std::is_void_v<T_Ret>) {
       return ret;
@@ -916,13 +926,19 @@ protected:
 
   inline T_PointerType impl_malloc_in_sandbox(size_t size)
   {
+    return impl_malloc_in_sandbox_hfi<false>(size);
+  }
+
+  template<bool THFIEntered>
+  inline T_PointerType impl_malloc_in_sandbox_hfi(size_t size)
+  {
     if constexpr(sizeof(size) > sizeof(uint32_t)) {
       detail::dynamic_check(size <= std::numeric_limits<uint32_t>::max(),
                             "Attempting to malloc more than the heap size");
     }
     using T_Func = void*(size_t);
     using T_Converted = T_PointerType(uint32_t);
-    T_PointerType ret = impl_invoke_with_func_ptr<T_Func, T_Converted>(
+    T_PointerType ret = impl_invoke_with_func_ptr_hfi<THFIEntered, T_Func, T_Converted>(
       reinterpret_cast<T_Converted*>(malloc_index),
       static_cast<uint32_t>(size));
     return ret;
@@ -930,9 +946,15 @@ protected:
 
   inline void impl_free_in_sandbox(T_PointerType p)
   {
+    return impl_free_in_sandbox_hfi<false>(p);
+  }
+
+  template<bool THFIEntered>
+  inline void impl_free_in_sandbox_hfi(T_PointerType p)
+  {
     using T_Func = void(void*);
     using T_Converted = void(T_PointerType);
-    impl_invoke_with_func_ptr<T_Func, T_Converted>(
+    impl_invoke_with_func_ptr_hfi<THFIEntered, T_Func, T_Converted>(
       reinterpret_cast<T_Converted*>(free_index), p);
   }
 
