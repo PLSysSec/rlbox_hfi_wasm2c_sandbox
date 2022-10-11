@@ -144,26 +144,32 @@ set (mod_wasm2c_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../hfi_wasm2c_sandbox_compiler/"
 # endif()
 
 if(DEV)
+  set(WASM2C_BUILD_DIR_SUFFIX "debug")
   set (WASM2C_BUILD_TYPE Debug)
 else()
-  if ("${DCMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set(WASM2C_BUILD_DIR_SUFFIX "debug")
     set (WASM2C_BUILD_TYPE Debug)
-  elseif ("${DCMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+  elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+    set(WASM2C_BUILD_DIR_SUFFIX "relwithdebinfo")
     set (WASM2C_BUILD_TYPE RelWithDebInfo)
-  elseif ("${DCMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
+  elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
+    set(WASM2C_BUILD_DIR_SUFFIX "minsizerel")
     set (WASM2C_BUILD_TYPE MinSizeRel)
   else()
+    set(WASM2C_BUILD_DIR_SUFFIX "release")
     set (WASM2C_BUILD_TYPE Release)
   endif()
 endif()
 
 # wasm2c ###################
-
 set(WASM2C_RUNTIME_SOURCE_DIR "${mod_wasm2c_SOURCE_DIR}/wasm2c/")
-set(WASM2C_RUNTIME_DIR "${mod_wasm2c_SOURCE_DIR}/build_release_hfi/")
-set(WASM2C_COMPILER_DIR "${WASM2C_RUNTIME_DIR}")
-
 set(C_SOURCE_FILES "${CMAKE_SOURCE_DIR}/c_src/wasm2c_sandbox_wrapper.c")
+
+# wasm2c hfi ###################
+
+set(WASM2C_RUNTIME_DIR "${mod_wasm2c_SOURCE_DIR}/build_${WASM2C_BUILD_DIR_SUFFIX}_hfi/")
+
 set(GLUE_LIB_WASM_DIR "${CMAKE_BINARY_DIR}/wasm/")
 set(GLUE_LIB_WASM "${GLUE_LIB_WASM_DIR}/glue_lib_wasm2c.wasm")
 set(GLUE_LIB_H "${GLUE_LIB_WASM_DIR}/glue_lib_wasm2c.h")
@@ -175,10 +181,10 @@ add_custom_command(OUTPUT "${GLUE_LIB_H}" "${GLUE_LIB_C}" "${GLUE_LIB_WASM}"
                    COMMAND ${CMAKE_COMMAND}
                            -DCMAKE_BUILD_TYPE=${WASM2C_BUILD_TYPE}
                            -S  .
-                           -B ./build_release_hfi
+                           -B ${WASM2C_RUNTIME_DIR}
                            -DWasmSafetyEnforcement=WASM_USE_HFI
                    COMMAND ${CMAKE_COMMAND}
-                           --build ./build_release_hfi
+                           --build ${WASM2C_RUNTIME_DIR}
                            --config ${WASM2C_BUILD_TYPE}
                            --parallel
                     COMMAND ${CMAKE_COMMAND} -E make_directory ${GLUE_LIB_WASM_DIR}
@@ -189,10 +195,46 @@ add_custom_command(OUTPUT "${GLUE_LIB_H}" "${GLUE_LIB_C}" "${GLUE_LIB_WASM}"
                             -o ${GLUE_LIB_WASM}
                             ${CMAKE_SOURCE_DIR}/c_src/wasm2c_sandbox_wrapper.c
                             ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib/libtest.c
-                    COMMAND ${WASM2C_COMPILER_DIR}/wasm2c
+                    COMMAND ${WASM2C_RUNTIME_DIR}/wasm2c
                             -o ${GLUE_LIB_C}
                             ${GLUE_LIB_WASM}
-                   COMMENT "Building wasm2c compiler, runtime and wasm sandboxed library")
+                   COMMENT "Building wasm2c-hfi compiler, runtime and wasm sandboxed library")
+
+# # wasm2c hfi emulated ###################
+
+# set(WASM2C_RUNTIME_DIR_HFIEMU "${mod_wasm2c_SOURCE_DIR}/build_${WASM2C_BUILD_DIR_SUFFIX}_hfiemulate/")
+
+# set(GLUE_LIB_WASM_DIR_HFIEMU "${CMAKE_BINARY_DIR}/wasm_hfiemu/")
+# set(GLUE_LIB_WASM_HFIEMU "${GLUE_LIB_WASM_DIR_HFIEMU}/glue_lib_wasm2c.wasm")
+# set(GLUE_LIB_H_HFIEMU "${GLUE_LIB_WASM_DIR_HFIEMU}/glue_lib_wasm2c.h")
+# set(GLUE_LIB_C_HFIEMU "${GLUE_LIB_WASM_DIR_HFIEMU}/glue_lib_wasm2c.c")
+
+# add_custom_command(OUTPUT "${GLUE_LIB_H_HFIEMU}" "${GLUE_LIB_C_HFIEMU}" "${GLUE_LIB_WASM_HFIEMU}"
+#                    DEPENDS ${C_SOURCE_FILES}
+#                    WORKING_DIRECTORY "${mod_wasm2c_SOURCE_DIR}"
+#                    COMMAND ${CMAKE_COMMAND}
+#                            -DCMAKE_BUILD_TYPE=${WASM2C_BUILD_TYPE}
+#                            -S  .
+#                            -B ${WASM2C_RUNTIME_DIR_HFIEMU}
+#                            -DWasmSafetyEnforcement=WASM_USE_HFI
+#                            -DHFI_EMULATION_ENABLE=ON
+#                    COMMAND ${CMAKE_COMMAND}
+#                            --build ${WASM2C_RUNTIME_DIR_HFIEMU}
+#                            --config ${WASM2C_BUILD_TYPE}
+#                            --parallel
+#                     COMMAND ${CMAKE_COMMAND} -E make_directory ${GLUE_LIB_WASM_DIR_HFIEMU}
+#                     COMMAND ${wasiclang_SOURCE_DIR}/bin/clang
+#                             --sysroot ${wasiclang_SOURCE_DIR}/share/wasi-sysroot/
+#                             -O3
+#                             -Wl,--export-all -Wl,--no-entry -Wl,--growable-table -Wl,-z,stack-size=1048576 -Wl,--global-base=65536
+#                             -o ${GLUE_LIB_WASM_HFIEMU}
+#                             ${CMAKE_SOURCE_DIR}/c_src/wasm2c_sandbox_wrapper.c
+#                             ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib/libtest.c
+#                     COMMAND ${WASM2C_RUNTIME_DIR_HFIEMU}/wasm2c
+#                             -o ${GLUE_LIB_C_HFIEMU}
+#                             ${GLUE_LIB_WASM_HFIEMU}
+#                    COMMENT "Building wasm2c-hfi compiler, runtime and wasm sandboxed library")
+
 
 # Tests ###################
 
@@ -217,6 +259,16 @@ target_include_directories(glue_lib_static PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm
 target_link_libraries(glue_lib_static ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
 target_compile_definitions(glue_lib_static PUBLIC WASM_USE_HFI)
 
+add_library(glue_lib_static_hfiemu STATIC ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
+target_include_directories(glue_lib_static_hfiemu PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                  PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
+                                                  PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
+)
+target_link_libraries(glue_lib_static_hfiemu ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
+target_compile_definitions(glue_lib_static_hfiemu PUBLIC WASM_USE_HFI
+                                                  PUBLIC HFI_EMULATION)
+add_dependencies(glue_lib_static_hfiemu glue_lib_static)
+
 add_library(glue_lib_so SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
                                        PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
@@ -226,7 +278,7 @@ target_link_libraries(glue_lib_so ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuv
 target_compile_definitions(glue_lib_so PUBLIC WASM_USE_HFI)
 
 # Add a dependency to glue_lib_static so we don't invoke the generator for GLUE_LIB_C multiple times
-add_dependencies(glue_lib_so glue_lib_static)
+add_dependencies(glue_lib_so glue_lib_static_hfiemu)
 # default firefox flags
 # target_compile_options(glue_lib_so PRIVATE -Werror -Wall -Wempty-body -Wignored-qualifiers -Wpointer-arith -Wsign-compare -Wtype-limits -Wunreachable-code -Wduplicated-cond -Wno-error=maybe-uninitialized -Wno-error=deprecated-declarations -Wno-error=array-bounds -Wno-error=coverage-mismatch -Wno-error=free-nonheap-object -Wno-multistatement-macros -Wno-error=class-memaccess -Wno-error=deprecated-copy -Wno-error=unused-but-set-variable -Wformat -Wformat-overflow=2 -Wno-psabi -Wno-error=unused-function)
 
@@ -296,12 +348,41 @@ target_link_libraries(test_rlbox_glue_static Catch2::Catch2
 
 target_compile_definitions(test_rlbox_glue_static PUBLIC WASM_USE_HFI)
 
-add_dependencies(test_rlbox_glue_static glue_lib_so)
-
 if(UNIX AND NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin"))
   target_link_libraries(test_rlbox_glue_static rt)
 endif()
 catch_discover_tests(test_rlbox_glue_static)
+
+####
+
+add_executable(test_rlbox_glue_static_hfiemu test/test_wasm2c_sandbox_glue_main.cpp
+                               test/test_wasm2c_sandbox_glue_static.cpp)
+target_include_directories(test_rlbox_glue_static_hfiemu PUBLIC ${CMAKE_SOURCE_DIR}/include
+                                           PUBLIC ${rlbox_SOURCE_DIR}/code/include
+                                           PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue
+                                           PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
+                                           PUBLIC ${rlbox_SOURCE_DIR}/wasm
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
+                                           PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
+                                           PUBLIC ${GLUE_LIB_WASM_DIR}
+                                           )
+target_link_libraries(test_rlbox_glue_static_hfiemu Catch2::Catch2
+                                      ${CMAKE_THREAD_LIBS_INIT}
+                                      ${CMAKE_DL_LIBS}
+                                      glue_lib_static_hfiemu
+)
+
+target_compile_definitions(test_rlbox_glue_static_hfiemu PUBLIC WASM_USE_HFI
+                                                         PUBLIC HFI_EMULATION)
+
+
+add_dependencies(test_rlbox_glue_static_hfiemu glue_lib_so)
+
+if(UNIX AND NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin"))
+  target_link_libraries(test_rlbox_glue_static_hfiemu rt)
+endif()
+catch_discover_tests(test_rlbox_glue_static_hfiemu)
 
 ####
 
@@ -392,6 +473,7 @@ endif()
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V)
 add_dependencies(check test_rlbox_glue)
+add_dependencies(check test_rlbox_glue_static_hfiemu)
 add_dependencies(check test_rlbox_glue_static)
 add_dependencies(check test_rlbox_glue_smallheap)
 add_dependencies(check test_rlbox_glue_embed)

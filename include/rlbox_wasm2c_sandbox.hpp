@@ -589,6 +589,12 @@ protected:
     sandbox_info = get_info_func();
 
     std::call_once(wasm2c_runtime_initialized, [&](){
+#     ifdef HFI_EMULATION
+#       ifndef RLBOX_USE_STATIC_CALLS
+#         error "Emulation supported for wasm2c static linking only"
+#       endif
+        wasm_rt_hfi_emulate_reserve_lower4();
+#     endif
       sandbox_info.wasm_rt_sys_init();
     });
 
@@ -664,7 +670,11 @@ protected:
         return nullptr;
       }
     } else {
+#ifdef HFI_EMULATION
+      return reinterpret_cast<void*>(p);
+#else
       return reinterpret_cast<void*>(heap_base + p);
+#endif
     }
   }
 
@@ -691,6 +701,7 @@ protected:
       if constexpr (sizeof(uintptr_t) == sizeof(uint32_t)) {
         return static_cast<T_PointerType>(reinterpret_cast<uintptr_t>(p) - heap_base);
       } else {
+        // works for both if HFI_EMULATION is defined and not
         return static_cast<T_PointerType>(reinterpret_cast<uintptr_t>(p));
       }
     }
@@ -714,6 +725,9 @@ protected:
         auto sandbox = expensive_sandbox_finder(example_unsandboxed_ptr);
         return sandbox->impl_get_unsandboxed_pointer<T>(p);
       } else {
+#ifdef HFI_EMULATION
+      return reinterpret_cast<void*>(p);
+#else
         // grab the memory base from the example_unsandboxed_ptr
         uintptr_t heap_base_mask =
           std::numeric_limits<uintptr_t>::max() &
@@ -722,6 +736,7 @@ protected:
           reinterpret_cast<uintptr_t>(example_unsandboxed_ptr) & heap_base_mask;
         uintptr_t ret = computed_heap_base | p;
         return reinterpret_cast<void*>(ret);
+#endif
       }
     }
   }
@@ -745,6 +760,7 @@ protected:
         return sandbox->impl_get_sandboxed_pointer<T>(p);
       } else {
         // Just clear the memory base to leave the offset
+        // works for both if HFI_EMULATION is defined and not
         RLBOX_WASM2C_UNUSED(example_unsandboxed_ptr);
         uintptr_t ret = reinterpret_cast<uintptr_t>(p) &
                         std::numeric_limits<T_PointerType>::max();
@@ -765,7 +781,11 @@ protected:
   {
     size_t length = impl_get_total_memory();
     uintptr_t p_val = reinterpret_cast<uintptr_t>(p);
+#ifdef HFI_EMULATION
+    return p_val < length;
+#else
     return p_val >= heap_base && p_val < (heap_base + length);
+#endif
   }
 
   inline bool impl_is_pointer_in_app_memory(const void* p)
