@@ -1,9 +1,5 @@
 #pragma once
 
-#ifndef WASM_USE_HFI
-#define WASM_USE_HFI
-#endif
-
 #include "wasm-rt.h"
 
 // Pull the helper header from the main repo for dynamic_check and scope_exit
