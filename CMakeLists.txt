@@ -200,40 +200,6 @@ add_custom_command(OUTPUT "${GLUE_LIB_H}" "${GLUE_LIB_C}" "${GLUE_LIB_WASM}"
                             ${GLUE_LIB_WASM}
                    COMMENT "Building wasm2c-hfi compiler, runtime and wasm sandboxed library")
 
-# # wasm2c hfi emulated ###################
-
-# set(WASM2C_RUNTIME_DIR_HFIEMU "${mod_wasm2c_SOURCE_DIR}/build_${WASM2C_BUILD_DIR_SUFFIX}_hfiemulate/")
-
-# set(GLUE_LIB_WASM_DIR_HFIEMU "${CMAKE_BINARY_DIR}/wasm_hfiemu/")
-# set(GLUE_LIB_WASM_HFIEMU "${GLUE_LIB_WASM_DIR_HFIEMU}/glue_lib_wasm2c.wasm")
-# set(GLUE_LIB_H_HFIEMU "${GLUE_LIB_WASM_DIR_HFIEMU}/glue_lib_wasm2c.h")
-# set(GLUE_LIB_C_HFIEMU "${GLUE_LIB_WASM_DIR_HFIEMU}/glue_lib_wasm2c.c")
-
-# add_custom_command(OUTPUT "${GLUE_LIB_H_HFIEMU}" "${GLUE_LIB_C_HFIEMU}" "${GLUE_LIB_WASM_HFIEMU}"
-#                    DEPENDS ${C_SOURCE_FILES}
-#                    WORKING_DIRECTORY "${mod_wasm2c_SOURCE_DIR}"
-#                    COMMAND ${CMAKE_COMMAND}
-#                            -DCMAKE_BUILD_TYPE=${WASM2C_BUILD_TYPE}
-#                            -S  .
-#                            -B ${WASM2C_RUNTIME_DIR_HFIEMU}
-#                            -DWasmSafetyEnforcement=WASM_USE_HFI
-#                            -DHFI_EMULATION_ENABLE=ON
-#                    COMMAND ${CMAKE_COMMAND}
-#                            --build ${WASM2C_RUNTIME_DIR_HFIEMU}
-#                            --config ${WASM2C_BUILD_TYPE}
-#                            --parallel
-#                     COMMAND ${CMAKE_COMMAND} -E make_directory ${GLUE_LIB_WASM_DIR_HFIEMU}
-#                     COMMAND ${wasiclang_SOURCE_DIR}/bin/clang
-#                             --sysroot ${wasiclang_SOURCE_DIR}/share/wasi-sysroot/
-#                             -O3
-#                             -Wl,--export-all -Wl,--no-entry -Wl,--growable-table -Wl,-z,stack-size=1048576 -Wl,--global-base=65536
-#                             -o ${GLUE_LIB_WASM_HFIEMU}
-#                             ${CMAKE_SOURCE_DIR}/c_src/wasm2c_sandbox_wrapper.c
-#                             ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib/libtest.c
-#                     COMMAND ${WASM2C_RUNTIME_DIR_HFIEMU}/wasm2c
-#                             -o ${GLUE_LIB_C_HFIEMU}
-#                             ${GLUE_LIB_WASM_HFIEMU}
-#                    COMMENT "Building wasm2c-hfi compiler, runtime and wasm sandboxed library")
 
 
 # Tests ###################
