@@ -600,6 +600,7 @@ protected:
 
     heap_base = reinterpret_cast<uintptr_t>(impl_get_memory_location());
 
+#ifndef HFI_EMULATION2
     if constexpr (sizeof(uintptr_t) != sizeof(uint32_t)) {
       // On larger platforms, check that the heap is aligned to the pointer size
       // i.e. 32-bit pointer => aligned to 4GB. The implementations of
@@ -609,7 +610,7 @@ protected:
       FALLIBLE_DYNAMIC_CHECK(infallible, (heap_base & heap_offset_mask) == 0,
                             "Sandbox heap not aligned to 4GB");
     }
-
+#endif
     // cache these for performance
     exec_env = sandbox;
 #ifndef RLBOX_USE_STATIC_CALLS
@@ -662,6 +663,8 @@ protected:
     } else {
 #ifdef HFI_EMULATION
       return reinterpret_cast<void*>(p);
+#elif defined(HFI_EMULATION2)
+      return reinterpret_cast<void*>(((uint64_t) hfi_emulate2_memory_start()) + p);
 #else
       return reinterpret_cast<void*>(heap_base + p);
 #endif
@@ -691,8 +694,12 @@ protected:
       if constexpr (sizeof(uintptr_t) == sizeof(uint32_t)) {
         return static_cast<T_PointerType>(reinterpret_cast<uintptr_t>(p) - heap_base);
       } else {
+#ifdef HFI_EMULATION2
+        return static_cast<T_PointerType>(reinterpret_cast<uintptr_t>(p) - ((uint64_t) hfi_emulate2_memory_start()));
+#else
         // works for both if HFI_EMULATION is defined and not
         return static_cast<T_PointerType>(reinterpret_cast<uintptr_t>(p));
+#endif
       }
     }
   }
@@ -717,6 +724,8 @@ protected:
       } else {
 #ifdef HFI_EMULATION
       return reinterpret_cast<void*>(p);
+#elif defined(HFI_EMULATION2)
+      return reinterpret_cast<void*>(((uint64_t) hfi_emulate2_memory_start()) + p);
 #else
         // grab the memory base from the example_unsandboxed_ptr
         uintptr_t heap_base_mask =
@@ -749,12 +758,17 @@ protected:
         auto sandbox = expensive_sandbox_finder(example_unsandboxed_ptr);
         return sandbox->impl_get_sandboxed_pointer<T>(p);
       } else {
+
+#ifdef HFI_EMULATION2
+        return static_cast<T_PointerType>(reinterpret_cast<uintptr_t>(p) - ((uint64_t) hfi_emulate2_memory_start()));
+#else
         // Just clear the memory base to leave the offset
         // works for both if HFI_EMULATION is defined and not
         RLBOX_WASM2C_UNUSED(example_unsandboxed_ptr);
         uintptr_t ret = reinterpret_cast<uintptr_t>(p) &
                         std::numeric_limits<T_PointerType>::max();
         return static_cast<T_PointerType>(ret);
+#endif
       }
     }
   }

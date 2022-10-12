@@ -235,6 +235,16 @@ target_compile_definitions(glue_lib_static_hfiemu PUBLIC WASM_USE_HFI
                                                   PUBLIC HFI_EMULATION)
 add_dependencies(glue_lib_static_hfiemu glue_lib_static)
 
+add_library(glue_lib_static_hfiemu2 STATIC ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
+target_include_directories(glue_lib_static_hfiemu2 PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                                   PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
+                                                   PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
+)
+target_link_libraries(glue_lib_static_hfiemu2 ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuvwasi_a.a -luv)
+target_compile_definitions(glue_lib_static_hfiemu2 PUBLIC WASM_USE_HFI
+                                                   PUBLIC HFI_EMULATION2)
+add_dependencies(glue_lib_static_hfiemu2 glue_lib_static_hfiemu)
+
 add_library(glue_lib_so SHARED ${GLUE_LIB_C} ${WASM2C_RUNTIME_CODE})
 target_include_directories(glue_lib_so PRIVATE ${mod_wasm2c_SOURCE_DIR}/wasm2c
                                        PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
@@ -244,7 +254,7 @@ target_link_libraries(glue_lib_so ${WASM2C_RUNTIME_DIR}/third_party/uvwasi/libuv
 target_compile_definitions(glue_lib_so PUBLIC WASM_USE_HFI)
 
 # Add a dependency to glue_lib_static so we don't invoke the generator for GLUE_LIB_C multiple times
-add_dependencies(glue_lib_so glue_lib_static_hfiemu)
+add_dependencies(glue_lib_so glue_lib_static_hfiemu2)
 # default firefox flags
 # target_compile_options(glue_lib_so PRIVATE -Werror -Wall -Wempty-body -Wignored-qualifiers -Wpointer-arith -Wsign-compare -Wtype-limits -Wunreachable-code -Wduplicated-cond -Wno-error=maybe-uninitialized -Wno-error=deprecated-declarations -Wno-error=array-bounds -Wno-error=coverage-mismatch -Wno-error=free-nonheap-object -Wno-multistatement-macros -Wno-error=class-memaccess -Wno-error=deprecated-copy -Wno-error=unused-but-set-variable -Wformat -Wformat-overflow=2 -Wno-psabi -Wno-error=unused-function)
 
@@ -352,6 +362,37 @@ catch_discover_tests(test_rlbox_glue_static_hfiemu)
 
 ####
 
+add_executable(test_rlbox_glue_static_hfiemu2 test/test_wasm2c_sandbox_glue_main.cpp
+                               test/test_wasm2c_sandbox_glue_static.cpp)
+target_include_directories(test_rlbox_glue_static_hfiemu2 PUBLIC ${CMAKE_SOURCE_DIR}/include
+                                           PUBLIC ${rlbox_SOURCE_DIR}/code/include
+                                           PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue
+                                           PUBLIC ${rlbox_SOURCE_DIR}/code/tests/rlbox_glue/lib
+                                           PUBLIC ${rlbox_SOURCE_DIR}/wasm
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/wasm2c
+                                           PUBLIC ${mod_wasm2c_SOURCE_DIR}/third_party/uvwasi/include
+                                           PUBLIC ${CMAKE_SOURCE_DIR}/../hw_isol_gem5/tests/test-progs/hfi
+                                           PUBLIC ${GLUE_LIB_WASM_DIR}
+                                           )
+target_link_libraries(test_rlbox_glue_static_hfiemu2 Catch2::Catch2
+                                      ${CMAKE_THREAD_LIBS_INIT}
+                                      ${CMAKE_DL_LIBS}
+                                      glue_lib_static_hfiemu2
+)
+
+target_compile_definitions(test_rlbox_glue_static_hfiemu2 PUBLIC WASM_USE_HFI
+                                                         PUBLIC HFI_EMULATION2)
+
+
+add_dependencies(test_rlbox_glue_static_hfiemu2 glue_lib_so)
+
+if(UNIX AND NOT (${CMAKE_SYSTEM_NAME} MATCHES "Darwin"))
+  target_link_libraries(test_rlbox_glue_static_hfiemu2 rt)
+endif()
+catch_discover_tests(test_rlbox_glue_static_hfiemu2)
+
+####
+
 add_executable(test_rlbox_glue_smallheap test/test_wasm2c_sandbox_glue_main.cpp
                                test/test_wasm2c_sandbox_glue_smallheap.cpp)
 target_include_directories(test_rlbox_glue_smallheap PUBLIC ${CMAKE_SOURCE_DIR}/include
@@ -440,6 +481,7 @@ endif()
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -V)
 add_dependencies(check test_rlbox_glue)
 add_dependencies(check test_rlbox_glue_static_hfiemu)
+add_dependencies(check test_rlbox_glue_static_hfiemu2)
 add_dependencies(check test_rlbox_glue_static)
 add_dependencies(check test_rlbox_glue_smallheap)
 add_dependencies(check test_rlbox_glue_embed)
