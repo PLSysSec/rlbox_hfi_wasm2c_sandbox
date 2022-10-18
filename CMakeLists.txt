@@ -168,7 +168,7 @@ set(C_SOURCE_FILES "${CMAKE_SOURCE_DIR}/c_src/wasm2c_sandbox_wrapper.c")
 
 # wasm2c hfi ###################
 
-set(WASM2C_RUNTIME_DIR "${mod_wasm2c_SOURCE_DIR}/build_${WASM2C_BUILD_DIR_SUFFIX}_hfi/")
+set(WASM2C_RUNTIME_DIR "${mod_wasm2c_SOURCE_DIR}/build_release_guardpages/")
 
 set(GLUE_LIB_WASM_DIR "${CMAKE_BINARY_DIR}/wasm/")
 set(GLUE_LIB_WASM "${GLUE_LIB_WASM_DIR}/glue_lib_wasm2c.wasm")
@@ -209,9 +209,7 @@ add_custom_command(OUTPUT "${GLUE_LIB_H}" "${GLUE_LIB_C}" "${GLUE_LIB_WASM}"
 #   add_link_options(${RLBOX_SANITIZER_LINK_FLAGS})
 # endif()
 
-file(GLOB_RECURSE
-     WASM2C_RUNTIME_CODE_C
-     ${WASM2C_RUNTIME_SOURCE_DIR}/*.c)
+set(WASM2C_RUNTIME_CODE_C ${WASM2C_RUNTIME_SOURCE_DIR}/uvwasi-rt.c  ${WASM2C_RUNTIME_SOURCE_DIR}/wasm-rt-impl.c  ${WASM2C_RUNTIME_SOURCE_DIR}/wasm-rt-os-unix.c)
 
 set(WASM2C_RUNTIME_CODE ${WASM2C_RUNTIME_CODE_C} ${WASM2C_RUNTIME_SOURCE_DIR}/wasm-rt-shadow.cpp)
 list(FILTER WASM2C_RUNTIME_CODE EXCLUDE REGEX "${WASM2C_RUNTIME_SOURCE_DIR}/wasm-rt-wasi.c" )
