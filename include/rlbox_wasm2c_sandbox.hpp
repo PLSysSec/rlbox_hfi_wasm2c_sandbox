@@ -905,6 +905,13 @@ protected:
     }
 #endif
 
+#ifdef WASM_USE_SEGMENT
+  asm volatile("wrgsbase %0\n"
+    : /* writes */
+    : /* reads */  "r" (heap_base)
+  );
+#endif
+
     if constexpr (std::is_void_v<T_Ret>) {
       RLBOX_WASM2C_UNUSED(ret);
       func_ptr_conv(exec_env, serialize_class_arg(params)...);
